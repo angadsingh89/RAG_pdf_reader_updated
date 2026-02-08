@@ -137,6 +137,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("⚠️ If PDFs are scanned images, run OCR before uploading.")
     st.caption("Get your free API key here: https://aistudio.google.com/app/apikey")
+    st.markdown("---")
+    st.markdown("Made by **Angad Singh** 👨‍💻")
 
 # The key is already handled in the sidebar logic above
 
