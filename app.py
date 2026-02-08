@@ -2,8 +2,18 @@ import os
 import io
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+# Load environment variables - try multiple paths
+from pathlib import Path
+
+# Try loading from the script directory
+script_dir = Path(__file__).parent
+env_file = script_dir / '.env'
+
+if env_file.exists():
+    load_dotenv(env_file)
+else:
+    # Try loading from current working directory
+    load_dotenv('.env')
 
 import streamlit as st
 from typing import List
