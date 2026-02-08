@@ -105,15 +105,28 @@ with st.sidebar:
     st.header("Made by **Angad Singh** 👨‍💻")
     st.markdown("---")
     
-    # Auto-load API Key
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+    # Auto-load API Key from Streamlit secrets (for deployment) or environment (for local)
+    if "api_key" not in st.session_state:
+        # Try Streamlit secrets first (for deployed app)
+        try:
+            st.session_state.api_key = st.secrets["GOOGLE_API_KEY"]
+        except (KeyError, FileNotFoundError):
+            # Fall back to environment variable (for local development)
+            st.session_state.api_key = os.getenv("GOOGLE_API_KEY", "")
+    
+    GOOGLE_API_KEY = st.session_state.api_key
+    
     if GOOGLE_API_KEY:
         st.success("✅ API Key loaded")
     else:
-        GOOGLE_API_KEY = st.text_input("🔑 Google API Key", type="password")
-        if not GOOGLE_API_KEY:
-             st.warning("Please enter API Key")
-             st.stop()
+        user_key = st.text_input("🔑 Google API Key", type="password", key="api_input")
+        if user_key:
+            st.session_state.api_key = user_key
+            GOOGLE_API_KEY = user_key
+            st.rerun()
+        else:
+            st.warning("Please enter API Key")
+            st.stop()
 
 # Hardcoded Configuration (Best Practices)
 MODEL_NAME = "gemini-2.5-flash"
