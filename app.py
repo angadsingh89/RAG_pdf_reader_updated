@@ -15,11 +15,8 @@ from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 
 # Import Google Gemini integration
-try:
-    from langchain_google_genai import ChatGoogleGenerativeAI
-except Exception as e:
-    st.error("⚠️ Could not import ChatGoogleGenerativeAI. Run: pip install langchain-google-genai")
-    raise e
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 # -------------------------
 # Helper functions
@@ -68,79 +65,52 @@ def chunk_documents(docs: List[Document], chunk_size: int = 1000, chunk_overlap:
 # -------------------------
 # Streamlit UI
 # -------------------------
+# -------------------------
+# Streamlit UI
+# -------------------------
 st.set_page_config(page_title="RAG Research Assistant", layout="wide", page_icon="📚")
 
-# Custom CSS for better aesthetics
+# Custom CSS
 st.markdown("""
 <style>
-    /* Global Styles */
-    h1 {
-        font-family: 'Inter', sans-serif;
-    }
+    h1 { font-family: 'Inter', sans-serif; }
     .stButton>button {
-        background-color: #2563EB; /* Primary Blue */
-        color: white;
-        border-radius: 8px;
-        padding: 0.5rem 1.5rem;
-        border: none;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: #2563EB; color: white; border-radius: 8px; border: none;
     }
-    .stButton>button:hover {
-        background-color: #1D4ED8;
-    }
-    .stTextInput>div>div>input {
-        border-radius: 8px;
-        border: 1px solid #E5E7EB;
-        padding: 0.5rem;
-    }
-    /* Custom Card Style for Sources */
     .source-card {
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
-        border-left: 4px solid #2563EB;
+        padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 4px solid #2563EB;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Clean Header
+# Header
 col1, col2 = st.columns([1, 5])
-with col1:
-    st.image("https://img.icons8.com/color/96/000000/brain--v1.png", width=80)
+with col1: st.image("https://img.icons8.com/color/96/000000/brain--v1.png", width=80)
 with col2:
     st.title("Research Assistant AI")
-    st.markdown("**Powered by Google Gemini 2.5** • *Upload your PDFs and ask anything.*")
+    st.markdown("**Powered by Google Gemini 2.5**")
 
-
+# Sidebar (Simplified)
 with st.sidebar:
-    st.header("⚙️ Settings")
-    # API Key Handling
-    # If the key is already in the environment (e.g. from .env), don't ask for it again.
+    st.header("Made by **Angad Singh** 👨‍💻")
+    st.markdown("---")
+    
+    # Auto-load API Key
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
     if GOOGLE_API_KEY:
-        st.success("✅ API Key loaded from .env file")
+        st.success("✅ API Key loaded")
     else:
         GOOGLE_API_KEY = st.text_input("🔑 Google API Key", type="password")
         if not GOOGLE_API_KEY:
-             st.warning("Please enter your API Key")
+             st.warning("Please enter API Key")
              st.stop()
-    
-    model_name = st.selectbox(
-        "🧠 Google Model Name", 
-        ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest"],
-        index=0
-    )
-    k_results = st.number_input("Retriever top-k results", min_value=1, max_value=10, value=5)
-    chunk_size = st.number_input("Chunk size", min_value=200, max_value=4000, value=1000, step=100)
-    chunk_overlap = st.number_input("Chunk overlap", min_value=0, max_value=1000, value=200, step=50)
-    st.markdown("---")
-    st.markdown("⚠️ If PDFs are scanned images, run OCR before uploading.")
-    st.caption("Get your free API key here: https://aistudio.google.com/app/apikey")
-    st.markdown("---")
-    st.markdown("Made by **Angad Singh** 👨‍💻")
 
-# The key is already handled in the sidebar logic above
+# Hardcoded Configuration (Best Practices)
+MODEL_NAME = "gemini-2.5-flash"
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 200
+K_RESULTS = 5
+
 
 
 # -------------------------
@@ -158,7 +128,8 @@ if uploaded_files:
         if not docs:
             st.error("No text extracted. Try another file or run OCR first.")
         else:
-            split_docs = chunk_documents(docs, chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap))
+            split_docs = chunk_documents(docs, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+
             st.success(f"✅ Extracted {len(split_docs)} chunks of text.")
 
             # Build embeddings and store in Chroma
@@ -195,7 +166,8 @@ else:
             
             # 1. Retrieve relevant documents (Simpler: direct similarity search)
             with st.spinner("🔍 Searching documents..."):
-                docs = vectordb.similarity_search(query, k=int(k_results))
+                docs = vectordb.similarity_search(query, k=K_RESULTS)
+
                 
             if not docs:
                 st.warning("No relevant documents found. Try rephrasing your question.")
@@ -216,11 +188,8 @@ else:
                 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
                 try:
                     llm = ChatGoogleGenerativeAI(
-                        model=model_name,
+                        model=MODEL_NAME,
                         temperature=0.0,
-                        max_tokens=None,
-                        timeout=None,
-                        max_retries=2,
                     )
                     
                     with st.spinner("🧠 Thinking..."):
@@ -243,7 +212,7 @@ else:
                         st.markdown(f"""
                         **1. Semantic Search:** We searched the vector database for chunks similar to: *"{query}"*
                         **2. Context Construction:** We found **{len(docs)}** relevant chunks and combined them into a context string.
-                        **3. LLM Prompting:** We sent the following prompt to the **{model_name}** model:
+                        **3. LLM Prompting:** We sent the following prompt to the **{MODEL_NAME}** model:
                         
                         ```text
                         System: {system_prompt}
